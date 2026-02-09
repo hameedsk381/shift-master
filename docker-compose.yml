@@ -20,13 +20,15 @@ services:
       retries: 5
       start_period: 30s
 
-  # Backend API (Bun + Hono)
+  # Backend API (Bun + Hono) - now serves both API and frontend
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     container_name: shiftmaster-backend
     restart: unless-stopped
+    ports:
+      - "80:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -46,23 +48,8 @@ services:
       retries: 3
       start_period: 10s
 
-  # Frontend (React + Vite served by Nginx)
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: shiftmaster-frontend
-    restart: unless-stopped
-    depends_on:
-      - backend
-    networks:
-      - shiftmaster-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+  # Frontend is now served by backend (simplified architecture)
+  # frontend service removed - UI served directly from backend container
 
   # Database seeder (one-time run)
   seeder:

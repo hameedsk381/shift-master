@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { serveStatic } from 'hono/bun';
 import { connectToDatabase } from './utils/db';
 
 // Routes
@@ -34,6 +35,12 @@ app.get('/', (c) => {
 app.get('/health', (c) => {
     return c.json({ status: 'healthy' });
 });
+
+// Static file serving for production
+if (process.env.NODE_ENV === 'production') {
+    app.use('*', serveStatic({ root: './dist' }));
+    app.use('*', serveStatic({ path: './dist/index.html' }));
+}
 
 // API Routes
 app.route('/api/auth', auth);
@@ -92,8 +99,40 @@ app.get('/api/dashboard/stats', async (c) => {
     }
 });
 
-// 404 handler
+// Static file serving for frontend
+app.get('*', async (c) => {
+    const url = new URL(c.req.url);
+    const path = url.pathname;
+    
+    // API routes go to 404
+    if (path.startsWith('/api/')) {
+        return c.json({ error: 'Not found' }, 404);
+    }
+    
+    // Serve static files
+    if (path === '/' || path === '/index.html') {
+        return c.html(await Bun.file('./dist/index.html').text());
+    }
+    
+    // Serve assets
+    if (path.startsWith('/assets/')) {
+        const file = Bun.file(`./dist${path}`);
+        if (await file.exists()) {
+            return new Response(file);
+        }
+    }
+    
+    // SPA fallback - serve index.html for all other routes
+    return c.html(await Bun.file('./dist/index.html').text());
+});
+
+// 404 handler for API routes only
 app.notFound((c) => {
+    const url = new URL(c.req.url);
+    if (url.pathname.startsWith('/api/')) {
+        return c.json({ error: 'Not found' }, 404);
+    }
+    // For non-API routes, let the static handler above deal with it
     return c.json({ error: 'Not found' }, 404);
 });
 
