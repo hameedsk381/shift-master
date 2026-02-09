@@ -11,8 +11,6 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - shiftmaster-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -37,8 +35,6 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-    networks:
-      - shiftmaster-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -62,8 +58,6 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-    networks:
-      - shiftmaster-network
     restart: "no"
     profiles:
       - seed
