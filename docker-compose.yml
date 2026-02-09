@@ -71,8 +71,3 @@ services:
 volumes:
   mongodb_data:
     driver: local
-
-networks:
-  shiftmaster-network:
-    driver: bridge
-
